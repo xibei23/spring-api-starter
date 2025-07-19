@@ -37,7 +37,9 @@ public class AuthController {
                 )
         );
 
-        var token = jwtService.generateToken(loginRequest.getEmail());
+        User user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow();
+
+        var token = jwtService.generateToken(user);
 
         return ResponseEntity.ok(new JwtResponse(token));
     }
@@ -54,9 +56,9 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<UserDto> me() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = (String) authentication.getPrincipal();
+        Long id = (Long) authentication.getPrincipal();
 
-        User user = userRepository.findByEmail(email).orElse(null);
+        User user = userRepository.findById(id).orElse(null);
         if (user == null) {
             return ResponseEntity.notFound().build();
         }
