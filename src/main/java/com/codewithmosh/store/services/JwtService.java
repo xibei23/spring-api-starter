@@ -3,6 +3,7 @@ package com.codewithmosh.store.services;
 import com.codewithmosh.store.config.JwtConfig;
 import com.codewithmosh.store.entities.User;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ClaimsBuilder;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import lombok.AllArgsConstructor;
@@ -15,38 +16,32 @@ import java.util.Date;
 public class JwtService {
     private final JwtConfig jwtConfig;
 
-    public String generateAccessToken(User user) {
+    public Jwt generateAccessToken(User user) {
         return generateToken(user, jwtConfig.getAccessTokenExpiration());
     }
 
-    public String generateRefreshToken(User user) {
+    public Jwt generateRefreshToken(User user) {
         return generateToken(user, jwtConfig.getRefreshTokenExpiration());
     }
 
-    private String generateToken(User user, long tokenExpiration) {
-        return Jwts.builder()
+    private Jwt generateToken(User user, long tokenExpiration) {
+        ClaimsBuilder builder = Jwts.claims()
                 .subject(user.getId().toString())
-                .claim("email", user.getEmail())
-                .claim("name", user.getName())
+                .add("email", user.getEmail())
+                .add("name", user.getName())
+                .add("role", user.getRole())
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 1000 * tokenExpiration))
-                .signWith(jwtConfig.getSecretKey())
-                .compact();
+                .expiration(new Date(System.currentTimeMillis() + 1000 * tokenExpiration));
+
+        return new Jwt(builder.build(), jwtConfig.getSecretKey());
     }
 
-    public boolean validateToken(String token) {
+    public Jwt parseToken(String token) {
         try {
-            Claims claims = getClaims(token);
-
-            return claims.getExpiration().after(new Date());
-
+            return new Jwt(getClaims(token), jwtConfig.getSecretKey());
         } catch (JwtException e) {
-            return false;
+            return null;
         }
-    }
-
-    public Long getIdFromToken(String token) {
-        return Long.valueOf(getClaims(token).getSubject());
     }
 
     private Claims getClaims(String token) {

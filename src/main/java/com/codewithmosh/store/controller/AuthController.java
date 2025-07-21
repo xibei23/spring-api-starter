@@ -7,6 +7,7 @@ import com.codewithmosh.store.dtos.UserDto;
 import com.codewithmosh.store.entities.User;
 import com.codewithmosh.store.mappers.UserMapper;
 import com.codewithmosh.store.repositories.UserRepository;
+import com.codewithmosh.store.services.Jwt;
 import com.codewithmosh.store.services.JwtService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -47,29 +48,30 @@ public class AuthController {
         var accessToken = jwtService.generateAccessToken(user);
         var refreshToken = jwtService.generateRefreshToken(user);
 
-        var cookie = new Cookie("refreshToken", refreshToken);
+        var cookie = new Cookie("refreshToken", refreshToken.toString());
         cookie.setHttpOnly(true);
         cookie.setPath("/auth/refresh");
         cookie.setMaxAge(jwtConfig.getRefreshTokenExpiration());
         cookie.setSecure(true);
         response.addCookie(cookie);
 
-        return ResponseEntity.ok(new JwtResponse(accessToken));
+        return ResponseEntity.ok(new JwtResponse(accessToken.toString()));
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<JwtResponse> refresh(
             @CookieValue(value = "refreshToken") String refreshToken
     ) {
-        if (!jwtService.validateToken(refreshToken)) {
+
+        Jwt jwt = jwtService.parseToken(refreshToken);
+        if (jwt == null || jwt.isExpired()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        var userId = jwtService.getIdFromToken(refreshToken);
-        var user = userRepository.findById(userId).orElseThrow();
+        var user = userRepository.findById(jwt.getUserId()).orElseThrow();
         var accessToken = jwtService.generateAccessToken(user);
 
-        return ResponseEntity.ok(new JwtResponse(accessToken));
+        return ResponseEntity.ok(new JwtResponse(accessToken.toString()));
     }
 
     @GetMapping("/me")
