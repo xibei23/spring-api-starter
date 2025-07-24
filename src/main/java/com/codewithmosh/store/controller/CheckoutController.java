@@ -2,6 +2,7 @@ package com.codewithmosh.store.controller;
 
 import com.codewithmosh.store.dtos.CheckOutRequest;
 import com.codewithmosh.store.dtos.CheckOutResponse;
+import com.codewithmosh.store.dtos.ErrorDto;
 import com.codewithmosh.store.entities.Cart;
 import com.codewithmosh.store.entities.Order;
 import com.codewithmosh.store.entities.OrderItem;
@@ -18,8 +19,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/checkout")
 @AllArgsConstructor
@@ -34,13 +33,13 @@ public class CheckoutController {
         Cart cart = cartRepository.getCartWithItems(request.getCartId()).orElse(null);
         if (cart == null) {
             return ResponseEntity.badRequest().body(
-                    Map.of("error", "Cart not found")
+                    new ErrorDto("Cart not found")
             );
         }
 
         if (cart.getItems().isEmpty()) {
             return ResponseEntity.badRequest().body(
-                    Map.of("error", "Cart is empty")
+                    new ErrorDto("Cart is empty")
             );
         }
 
